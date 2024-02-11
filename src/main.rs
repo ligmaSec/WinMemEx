@@ -1,26 +1,43 @@
+
+use sysinfo::{MemoryRefreshKind, RefreshKind, System};
 use std::process;
+//use std::time::Duration;
+//use std::thread;
+const ALLOCATION_SIZE: usize =  1024 * 1024; //  1 MB
+
 fn main() {
-    let mut alloc_size = 1024 * 1024;
+    let mut allocations = Vec::new();
+    
+    
+    let mut sys = System::new_with_specifics(
+            RefreshKind::new().with_memory(MemoryRefreshKind::everything()),
+        );
 
-    // Initialize a vector to hold the allocated memory
-    let mut vec: Vec<u8> = Vec::new();
-
+    sys.refresh_memory();
     loop {
-        match vec.try_reserve(alloc_size) {
-            Ok(_) => {
-                unsafe { vec.set_len(vec.len() + alloc_size); }
-            }
-            Err(_) => {
-                println!("Failed to allocate memory, trying to decrease.");
-                if alloc_size > 2 {
-                    alloc_size = alloc_size / 2 ;
+        match check_free_memory(&mut sys) {
+            Ok(free_memory) => {
+                if free_memory >= ALLOCATION_SIZE {
+                    allocations.push(vec![69u8; ALLOCATION_SIZE]);
+                    println!("{} Bytes free", free_memory);
+                } else {
+                    println!("Warning: Less than  1 MB of free memory left.");
                 }
-                else {
-                    break;
-                }
+            },
+            Err(e) => {
+                eprintln!("An error occured while trying to fetch the remaining memory: {}", e);
+                process::exit(1);
             }
         }
-    }
 
-    process::exit(0);
+        //thread::sleep(Duration::from_millis(100));
+    }
+}
+
+fn check_free_memory(sys: &mut System) -> Result<usize, Box<dyn std::error::Error>> {
+
+    sys.refresh_memory();
+    Ok(sys.free_memory() as usize)
+
+
 }
