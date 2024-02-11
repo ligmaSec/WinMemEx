@@ -1,6 +1,7 @@
 
 use sysinfo::{MemoryRefreshKind, RefreshKind, System};
 use std::process;
+use rand::Rng;
 //use std::time::Duration;
 //use std::thread;
 const ALLOCATION_SIZE: usize =  1024 * 1024; //  1 MB
@@ -12,13 +13,12 @@ fn main() {
     let mut sys = System::new_with_specifics(
             RefreshKind::new().with_memory(MemoryRefreshKind::everything()),
         );
-
-    sys.refresh_memory();
+    let mut rng = rand::thread_rng();
     loop {
         match check_free_memory(&mut sys) {
             Ok(free_memory) => {
                 if free_memory >= ALLOCATION_SIZE {
-                    allocations.push(vec![69u8; ALLOCATION_SIZE]);
+                    allocations.push(vec![rng.gen_range(0..255); ALLOCATION_SIZE]);
                     println!("{} Bytes free", free_memory);
                 } else {
                     println!("Warning: Less than  1 MB of free memory left.");
